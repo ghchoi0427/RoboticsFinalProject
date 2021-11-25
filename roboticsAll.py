@@ -293,6 +293,21 @@ class robot:
 
         return res
 
+    def move_custom(self, dx, dy):
+        res = robot()
+        res.length = self.length
+        res.steering_noise = self.steering_noise
+        res.distance_noise = self.distance_noise
+        res.measurement_noise = self.measurement_noise
+        res.num_collisions = self.num_collisions
+        res.num_steps = self.num_steps + 1
+
+        res.x += dx
+        res.y += dy
+
+        return res
+
+
     # --------
     # sense:
     #

@@ -195,6 +195,11 @@ class robot:
         self.num_collisions = 0
         self.num_steps = 0
 
+        self.dist_top = 0
+        self.dist_bottom = 0
+        self.dist_right = 0
+        self.dist_left = 0
+
     # --------
     # set:
     #   sets a robot coordinate
@@ -307,7 +312,6 @@ class robot:
 
         return res
 
-
     # --------
     # sense:
     #
@@ -321,6 +325,23 @@ class robot:
     # measurement_prob
     #    computes the probability of a measurement
     #
+
+    def sense_custom(self, grid):
+
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == 1:
+                    if (self.x == i):
+                        if (self.y < j and self.y - j < self.dist_right):
+                            self.dist_right = j - self.y
+                        if (self.y > j and self.y - j < self.dist_left):
+                            self.dist_left = self.y - j
+                    if (self.y == j):
+                        if (self.x > i and self.x - i < self.dist_top):
+                            self.dist_top = self.x - i
+                        if (self.x < i and i - self.x < self.dist_bottom):
+                            self.dist_bottom = i - self.x
+                #print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
 
     def measurement_prob(self, measurement):
 
@@ -401,7 +422,7 @@ class particles:
             newdata.append(r)
         self.data = newdata
 
-    #----
+    # ----
     #
     # custom move
     #
@@ -447,7 +468,7 @@ class particles:
 def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     myrobot = robot()
     myrobot.set(0., 0., 0.)
-    #myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
+    # myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
     filter = particles(myrobot.x, myrobot.y, myrobot.orientation,
                        steering_noise, distance_noise, measurement_noise)
 
@@ -532,8 +553,6 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
          weight_data, weight_smooth, p_gain, d_gain):
     path = plan(grid, init, goal)
     path.astar()
-    print("astar")
-    print(path.path)
     path.smooth(weight_data, weight_smooth)
     checkgoal, collisions, steps, trail_sense, trail_move = run(grid, goal, path.spath, [p_gain, d_gain])
 

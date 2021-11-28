@@ -195,10 +195,10 @@ class robot:
         self.num_collisions = 0
         self.num_steps = 0
 
-        self.dist_top = 0
-        self.dist_bottom = 0
-        self.dist_right = 0
-        self.dist_left = 0
+        self.dist_top = 3
+        self.dist_bottom = 3
+        self.dist_right = 3
+        self.dist_left = 3
 
     # --------
     # set:

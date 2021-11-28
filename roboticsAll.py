@@ -447,7 +447,7 @@ class particles:
 def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     myrobot = robot()
     myrobot.set(0., 0., 0.)
-    myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
+    #myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
     filter = particles(myrobot.x, myrobot.y, myrobot.orientation,
                        steering_noise, distance_noise, measurement_noise)
 
@@ -532,6 +532,8 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
          weight_data, weight_smooth, p_gain, d_gain):
     path = plan(grid, init, goal)
     path.astar()
+    print("astar")
+    print(path.path)
     path.smooth(weight_data, weight_smooth)
     checkgoal, collisions, steps, trail_sense, trail_move = run(grid, goal, path.spath, [p_gain, d_gain])
 

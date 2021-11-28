@@ -401,6 +401,18 @@ class particles:
             newdata.append(r)
         self.data = newdata
 
+    #----
+    #
+    # custom move
+    #
+    def move_custom(self, dx, dy):
+        newdata = []
+
+        for i in range(self.N):
+            r = self.data[i].move_custom(self, dx, dy)
+            newdata.append(r)
+        self.data = newdata
+
     # --------
     #
     # sensing and resampling
@@ -515,7 +527,6 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
 
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
          weight_data, weight_smooth, p_gain, d_gain):

@@ -324,7 +324,6 @@ class robot:
             if (num == 4 and grid[int(self.x)][int(self.y) - 1] != 1 and int(self.y) > 0):
                 self.y -= 1
 
-
     # --------
     # sense:
     #
@@ -345,7 +344,7 @@ class robot:
             for j in range(len(grid[0])):
                 if grid[i][j] == 1:
                     if (self.x == i):
-                        if (self.y < j and self.y - j < self.dist_right):
+                        if (self.y < j and j - self.y < self.dist_right):
                             self.dist_right = j - self.y
                         if (self.y > j and self.y - j < self.dist_left):
                             self.dist_left = self.y - j
@@ -354,7 +353,7 @@ class robot:
                             self.dist_top = self.x - i
                         if (self.x < i and i - self.x < self.dist_bottom):
                             self.dist_bottom = i - self.x
-                # print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
+        print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
 
     def measurement_prob(self, measurement):
 

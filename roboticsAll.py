@@ -312,6 +312,19 @@ class robot:
 
         return res
 
+    def move_random(self, grid):
+        num = random.randint(1, 5)
+        if (int(self.x) >= 0 and int(self.x) < len(grid) - 1 and int(self.y) >= 0 and int(self.y) < len(grid[0]) - 1):
+            if (num == 1 and grid[int(self.x) + 1][int(self.y)] != 1 and int(self.x) < len(grid) - 1):
+                self.x += 1
+            if (num == 2 and grid[int(self.x) - 1][int(self.y)] != 1 and int(self.x) > 0):
+                self.x -= 1
+            if (num == 3 and grid[int(self.x)][int(self.y) + 1] != 1 and int(self.y) < len(grid[0]) - 1):
+                self.y += 1
+            if (num == 4 and grid[int(self.x)][int(self.y) - 1] != 1 and int(self.y) > 0):
+                self.y -= 1
+
+
     # --------
     # sense:
     #
@@ -341,7 +354,7 @@ class robot:
                             self.dist_top = self.x - i
                         if (self.x < i and i - self.x < self.dist_bottom):
                             self.dist_bottom = i - self.x
-                #print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
+                # print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
 
     def measurement_prob(self, measurement):
 
@@ -520,7 +533,9 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
 
         steer = - params[0] * cte - params[1] * diff_cte
 
-        myrobot = myrobot.move(grid, steer, speed)
+        # myrobot = myrobot.move(grid, steer, speed)
+        myrobot.move_random(grid)
+        myrobot.sense_custom(grid)
         filter.move(grid, steer, speed)
 
         Z = myrobot.sense()
@@ -548,6 +563,7 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
          weight_data, weight_smooth, p_gain, d_gain):

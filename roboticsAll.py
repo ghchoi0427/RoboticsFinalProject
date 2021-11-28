@@ -323,6 +323,10 @@ class robot:
                 self.y += 1
             if (num == 4 and grid[int(self.x)][int(self.y) - 1] != 1 and int(self.y) > 0):
                 self.y -= 1
+        self.dist_top = 3
+        self.dist_bottom = 3
+        self.dist_right = 3
+        self.dist_left = 3
 
     # --------
     # sense:

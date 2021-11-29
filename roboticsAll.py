@@ -195,6 +195,11 @@ class robot:
         self.num_collisions = 0
         self.num_steps = 0
 
+        self.dist_top = 3
+        self.dist_bottom = 3
+        self.dist_right = 3
+        self.dist_left = 3
+
     # --------
     # set:
     #   sets a robot coordinate
@@ -293,6 +298,36 @@ class robot:
 
         return res
 
+    def move_custom(self, dx, dy):
+        res = robot()
+        res.length = self.length
+        res.steering_noise = self.steering_noise
+        res.distance_noise = self.distance_noise
+        res.measurement_noise = self.measurement_noise
+        res.num_collisions = self.num_collisions
+        res.num_steps = self.num_steps + 1
+
+        res.x += dx
+        res.y += dy
+
+        return res
+
+    def move_random(self, grid):
+        num = random.randint(1, 5)
+        if (int(self.x) >= 0 and int(self.x) < len(grid) - 1 and int(self.y) >= 0 and int(self.y) < len(grid[0]) - 1):
+            if (num == 1 and grid[int(self.x) + 1][int(self.y)] != 1 and int(self.x) < len(grid) - 1):
+                self.x += 1
+            if (num == 2 and grid[int(self.x) - 1][int(self.y)] != 1 and int(self.x) > 0):
+                self.x -= 1
+            if (num == 3 and grid[int(self.x)][int(self.y) + 1] != 1 and int(self.y) < len(grid[0]) - 1):
+                self.y += 1
+            if (num == 4 and grid[int(self.x)][int(self.y) - 1] != 1 and int(self.y) > 0):
+                self.y -= 1
+        self.dist_top = 3
+        self.dist_bottom = 3
+        self.dist_right = 3
+        self.dist_left = 3
+
     # --------
     # sense:
     #
@@ -306,6 +341,23 @@ class robot:
     # measurement_prob
     #    computes the probability of a measurement
     #
+
+    def sense_custom(self, grid):
+
+        for i in range(len(grid)):
+            for j in range(len(grid[0])):
+                if grid[i][j] == 1:
+                    if (self.x == i):
+                        if (self.y < j and j - self.y < self.dist_right):
+                            self.dist_right = j - self.y
+                        if (self.y > j and self.y - j < self.dist_left):
+                            self.dist_left = self.y - j
+                    if (self.y == j):
+                        if (self.x > i and self.x - i < self.dist_top):
+                            self.dist_top = self.x - i
+                        if (self.x < i and i - self.x < self.dist_bottom):
+                            self.dist_bottom = i - self.x
+        print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
 
     def measurement_prob(self, measurement):
 
@@ -386,6 +438,18 @@ class particles:
             newdata.append(r)
         self.data = newdata
 
+    # ----
+    #
+    # custom move
+    #
+    def move_custom(self, dx, dy):
+        newdata = []
+
+        for i in range(self.N):
+            r = self.data[i].move_custom(self, dx, dy)
+            newdata.append(r)
+        self.data = newdata
+
     # --------
     #
     # sensing and resampling
@@ -420,7 +484,7 @@ class particles:
 def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     myrobot = robot()
     myrobot.set(0., 0., 0.)
-    myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
+    # myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
     filter = particles(myrobot.x, myrobot.y, myrobot.orientation,
                        steering_noise, distance_noise, measurement_noise)
 
@@ -472,7 +536,9 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
 
         steer = - params[0] * cte - params[1] * diff_cte
 
-        myrobot = myrobot.move(grid, steer, speed)
+        # myrobot = myrobot.move(grid, steer, speed)
+        myrobot.move_random(grid)
+        myrobot.sense_custom(grid)
         filter.move(grid, steer, speed)
 
         Z = myrobot.sense()

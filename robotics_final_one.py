@@ -205,11 +205,10 @@ class robot:
     #   sets a robot coordinate
     #
 
-    def set(self, new_x, new_y, new_orientation):
+    def set(self, new_x, new_y):
 
         self.x = float(new_x)
         self.y = float(new_y)
-        self.orientation = float(new_orientation) % (2.0 * pi)
 
     # --------
     # set_noise:
@@ -400,7 +399,7 @@ class particles:
         self.data = []
         for i in range(self.N):
             r = robot()
-            r.set(x, y, theta)
+            r.set(x, y)
             r.set_noise(steering_noise, distance_noise, measurement_noise)
             self.data.append(r)
 
@@ -483,63 +482,23 @@ class particles:
 
 def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     myrobot = robot()
-    myrobot.set(0., 0., 0.)
+    myrobot.set(0., 0.)
     # myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
     filter = particles(myrobot.x, myrobot.y, myrobot.orientation,
                        steering_noise, distance_noise, measurement_noise)
 
-    cte = 0.0
-    err = 0.0
+    # cte = 0.0
+    # err = 0.0
     N = 0
 
     index = 0  # index into the path
     trail_sense = []
     trail_move = []
 
-    while not myrobot.check_goal(goal) and N < timeout:
-
-        diff_cte = - cte
-
-        # ----------------------------------------
-        # compute the CTE
-
-        # start with the present robot estimate
-        estimate = filter.get_position()
-
-        ### ENTER CODE HERE
-
-        while index + 1 < len(spath):
-            # while index+1>=len(spath):
-            #     index -= 1
-            deltaX = spath[index + 1][0] - spath[index][0]
-            deltaY = spath[index + 1][1] - spath[index][1]
-            Rx = estimate[0] - spath[index][0]
-            Ry = estimate[1] - spath[index][1]
-
-            try:
-                proju = (Rx * deltaX + Ry * deltaY) / (deltaX ** 2 + deltaY ** 2)
-            except OverflowError:
-                print("### Overflow Error ###")
-                return [False, 0, 0]
-
-            proju = (Rx * deltaX + Ry * deltaY) / (deltaX ** 2 + deltaY ** 2)
-
-            cte = (Ry * deltaX - Rx * deltaY) / (deltaX ** 2 + deltaY ** 2)
-            if proju > 1.0:
-                index += 1
-            else:
-                break
-
-        # ----------------------------------------
-
-        diff_cte += cte
-
-        steer = - params[0] * cte - params[1] * diff_cte
-
-        # myrobot = myrobot.move(grid, steer, speed)
+    for i in range(100):
         myrobot.move_random(grid)
         myrobot.sense_custom(grid)
-        filter.move(grid, steer, speed)
+        filter.move(grid, 0., speed)
 
         Z = myrobot.sense()
         filter.sense(Z)
@@ -547,17 +506,7 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
         trail_sense.append([guessP[0], guessP[1]])
         trail_move.append([Z[0], Z[1]])
 
-        if not myrobot.check_collision(grid):
-            print('##### Collision ####')
-
-        err += (cte ** 2)
-        N += 1
-
-        if printflag:
-            print(myrobot, cte, index, u)
-
     return [myrobot.check_goal(goal), myrobot.num_collisions, myrobot.num_steps, trail_sense, trail_move]
-
 
 # ------------------------------------------------
 #
@@ -587,17 +536,17 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
     map_grid = np.asarray(map_grid)
     plt.scatter(map_grid[:, 0], map_grid[:, 1], s=200)
 
-    map_path = np.asarray(path.path)
-    map_spath = np.asarray(path.spath)
-    plt.plot(map_path[:, 1], map_path[:, 0], 'b')
-    plt.plot(map_spath[:, 1], map_spath[:, 0], 'ro-')
-    plt.scatter(init[1], init[0], s=100, marker="D")
-    plt.scatter(goal[1], goal[0], s=200, marker=(5, 1))
+    #map_path = np.asarray(path.path)
+   # map_spath = np.asarray(path.spath)
+    #plt.plot(map_path[:, 1], map_path[:, 0], 'b')
+    #plt.plot(map_spath[:, 1], map_spath[:, 0], 'ro-')
+    #plt.scatter(init[1], init[0], s=100, marker="D")
+    #plt.scatter(goal[1], goal[0], s=200, marker=(5, 1))
     print('Goal: ', goal)
     print('Last location: ', trail_move[-1])
     map_trail_sense = np.asarray(trail_sense)
     map_trail_move = np.asarray(trail_move)
-    plt.plot(map_trail_sense[:, 1], map_trail_sense[:, 0], 'y.-', label='Particle filter estimate')
+    #plt.plot(map_trail_sense[:, 1], map_trail_sense[:, 0], 'y.-', label='Particle filter estimate')
     plt.plot(map_trail_move[:, 1], map_trail_move[:, 0], 'k.-', label='Robot location measurement')
     plt.legend(loc='lower right')
     plt.xlim(-1, 13)

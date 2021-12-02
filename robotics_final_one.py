@@ -138,9 +138,6 @@ class plan:
     def smooth(self, weight_data=0.1, weight_smooth=0.1,
                tolerance=0.000001):
 
-        if self.path == []:
-            raise ValueError("Run A* first before smoothing path")
-
         self.spath = [[0 for row in range(len(self.path[0]))] \
                       for col in range(len(self.path))]
         for i in range(len(self.path)):
@@ -168,9 +165,6 @@ class plan:
                         self.spath[i][j] += 0.5 * weight_smooth * \
                                             (2.0 * self.spath[i + 1][j] - self.spath[i + 2][j]
                                              - self.spath[i][j])
-
-            change += abs(aux - self.spath[i][j])
-
 
 # ------------------------------------------------
 #
@@ -342,6 +336,14 @@ class robot:
     #
 
     def sense_custom(self, grid):
+        if (self.x < 2 and self.x < self.dist_left):
+            self.dist_left = self.x
+        if (len(grid) - 1 - self.x < 3 and len(grid) - 1 - self.x < self.dist_right):
+            self.dist_right = len(grid) - 1 - self.x
+        if (self.y < 2 and self.y < self.dist_top):
+            self.dist_top = self.y
+        if (len(grid[0]) - 1 - self.y < 3 and len(grid[0]) - 1 - self.y < self.dist_bottom):
+            self.dist_bottom = len(grid[0]) - 1 - self.y
 
         for i in range(len(grid)):
             for j in range(len(grid[0])):
@@ -356,6 +358,7 @@ class robot:
                             self.dist_top = self.x - i
                         if (self.x < i and i - self.x < self.dist_bottom):
                             self.dist_bottom = i - self.x
+
         print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
 
     def measurement_prob(self, measurement):
@@ -482,13 +485,11 @@ class particles:
 
 def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     myrobot = robot()
-    myrobot.set(0., 0.)
+    myrobot.set(5., 5.)
     # myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
     filter = particles(myrobot.x, myrobot.y, myrobot.orientation,
                        steering_noise, distance_noise, measurement_noise)
 
-    # cte = 0.0
-    # err = 0.0
     N = 0
 
     index = 0  # index into the path
@@ -508,6 +509,7 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
 
     return [myrobot.check_goal(goal), myrobot.num_collisions, myrobot.num_steps, trail_sense, trail_move]
 
+
 # ------------------------------------------------
 #
 # this is our main routine
@@ -520,7 +522,6 @@ import matplotlib.pyplot as plt
 def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
          weight_data, weight_smooth, p_gain, d_gain):
     path = plan(grid, init, goal)
-    path.astar()
     path.smooth(weight_data, weight_smooth)
     checkgoal, collisions, steps, trail_sense, trail_move = run(grid, goal, path.spath, [p_gain, d_gain])
 
@@ -536,17 +537,10 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
     map_grid = np.asarray(map_grid)
     plt.scatter(map_grid[:, 0], map_grid[:, 1], s=200)
 
-    #map_path = np.asarray(path.path)
-   # map_spath = np.asarray(path.spath)
-    #plt.plot(map_path[:, 1], map_path[:, 0], 'b')
-    #plt.plot(map_spath[:, 1], map_spath[:, 0], 'ro-')
-    #plt.scatter(init[1], init[0], s=100, marker="D")
-    #plt.scatter(goal[1], goal[0], s=200, marker=(5, 1))
     print('Goal: ', goal)
     print('Last location: ', trail_move[-1])
     map_trail_sense = np.asarray(trail_sense)
     map_trail_move = np.asarray(trail_move)
-    #plt.plot(map_trail_sense[:, 1], map_trail_sense[:, 0], 'y.-', label='Particle filter estimate')
     plt.plot(map_trail_move[:, 1], map_trail_move[:, 0], 'k.-', label='Robot location measurement')
     plt.legend(loc='lower right')
     plt.xlim(-1, 13)
@@ -567,17 +561,19 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
 #   0 = navigable space
 #   1 = occupied space
 
-grid = [[0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
-        [0, 0, 1, 0, 0, 0, 0, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 1, 1, 1],
-        [0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]
+grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1],
+        [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1],
+        [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1],
+        [1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1],
+        [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
 init = [0, 0]
 goal = [len(grid) - 1, len(grid[0]) - 1]

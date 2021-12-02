@@ -138,9 +138,6 @@ class plan:
     def smooth(self, weight_data=0.1, weight_smooth=0.1,
                tolerance=0.000001):
 
-        if self.path == []:
-            raise ValueError("Run A* first before smoothing path")
-
         self.spath = [[0 for row in range(len(self.path[0]))] \
                       for col in range(len(self.path))]
         for i in range(len(self.path)):
@@ -169,8 +166,6 @@ class plan:
                                             (2.0 * self.spath[i + 1][j] - self.spath[i + 2][j]
                                              - self.spath[i][j])
 
-            change += abs(aux - self.spath[i][j])
-
 
 # ------------------------------------------------
 #
@@ -195,21 +190,19 @@ class robot:
         self.num_collisions = 0
         self.num_steps = 0
 
-        self.dist_top = 3
-        self.dist_bottom = 3
-        self.dist_right = 3
-        self.dist_left = 3
+        self.dist_arr = []
+        for i in range(8):
+            self.dist_arr.append(3)
 
     # --------
     # set:
     #   sets a robot coordinate
     #
 
-    def set(self, new_x, new_y, new_orientation):
+    def set(self, new_x, new_y):
 
         self.x = float(new_x)
         self.y = float(new_y)
-        self.orientation = float(new_orientation) % (2.0 * pi)
 
     # --------
     # set_noise:
@@ -298,22 +291,21 @@ class robot:
 
         return res
 
-    def move_custom(self, dx, dy):
-        res = robot()
-        res.length = self.length
-        res.steering_noise = self.steering_noise
-        res.distance_noise = self.distance_noise
-        res.measurement_noise = self.measurement_noise
-        res.num_collisions = self.num_collisions
-        res.num_steps = self.num_steps + 1
+    def move_custom(self, direction):
+        if (direction == 1):
+            self.x += 1
+        if (direction == 2):
+            self.x -= 1
+        if (direction == 3):
+            self.y += 1
+        if (direction == 4):
+            self.y -= 1
+        self.dist_arr[0] = 3
+        self.dist_arr[4] = 3
+        self.dist_arr[2] = 3
+        self.dist_arr[6] = 3
 
-        res.x += dx
-        res.y += dy
-
-        return res
-
-    def move_random(self, grid):
-        num = random.randint(1, 5)
+    def move_random(self, grid, num):
         if (int(self.x) >= 0 and int(self.x) < len(grid) - 1 and int(self.y) >= 0 and int(self.y) < len(grid[0]) - 1):
             if (num == 1 and grid[int(self.x) + 1][int(self.y)] != 1 and int(self.x) < len(grid) - 1):
                 self.x += 1
@@ -323,10 +315,11 @@ class robot:
                 self.y += 1
             if (num == 4 and grid[int(self.x)][int(self.y) - 1] != 1 and int(self.y) > 0):
                 self.y -= 1
-        self.dist_top = 3
-        self.dist_bottom = 3
-        self.dist_right = 3
-        self.dist_left = 3
+
+        self.dist_arr[0] = 3
+        self.dist_arr[4] = 3
+        self.dist_arr[2] = 3
+        self.dist_arr[6] = 3
 
     # --------
     # sense:
@@ -343,32 +336,61 @@ class robot:
     #
 
     def sense_custom(self, grid):
-
         for i in range(len(grid)):
             for j in range(len(grid[0])):
                 if grid[i][j] == 1:
                     if (self.x == i):
-                        if (self.y < j and j - self.y < self.dist_right):
-                            self.dist_right = j - self.y
-                        if (self.y > j and self.y - j < self.dist_left):
-                            self.dist_left = self.y - j
+                        if (self.y < j and j - self.y < self.dist_arr[2]):
+                            self.dist_arr[2] = j - self.y
+                        if (self.y > j and self.y - j < self.dist_arr[6]):
+                            self.dist_arr[6] = self.y - j
                     if (self.y == j):
-                        if (self.x > i and self.x - i < self.dist_top):
-                            self.dist_top = self.x - i
-                        if (self.x < i and i - self.x < self.dist_bottom):
-                            self.dist_bottom = i - self.x
-        print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
+                        if (self.x > i and self.x - i < self.dist_arr[0]):
+                            self.dist_arr[0] = self.x - i
+                        if (self.x < i and i - self.x < self.dist_arr[4]):
+                            self.dist_arr[4] = i - self.x
 
-    def measurement_prob(self, measurement):
+                    for k in range(2,0,-1):
+                        if(self.x-k == i and self.y-k == j):
+                            self.dist_arr[7] = k*sqrt(2)
+                        if (self.x - k == i and self.y + k == j):
+                            self.dist_arr[5] = k * sqrt(2)
+                        if (self.x + k == i and self.y + k == j):
+                            self.dist_arr[3] = k * sqrt(2)
+                        if (self.x + k == i and self.y - k == j):
+                            self.dist_arr[1] = k * sqrt(2)
+
+
+        return self.dist_arr
+
+    def measurement_prob(self, actual, measurement):
 
         # compute errors
-        error_x = measurement[0] - self.x
-        error_y = measurement[1] - self.y
+        error_0 = measurement[0] - actual[0]
+        error_1 = measurement[1] - actual[1]
+        error_2 = measurement[2] - actual[2]
+        error_3 = measurement[3] - actual[3]
+        error_4 = measurement[4] - actual[4]
+        error_5 = measurement[5] - actual[5]
+        error_6 = measurement[6] - actual[6]
+        error_7 = measurement[7] - actual[7]
 
         # calculate Gaussian
-        error = exp(- (error_x ** 2) / (self.measurement_noise ** 2) / 2.0) \
+        error = exp(- (error_0 ** 2) / (self.measurement_noise ** 2) / 2.0) \
                 / sqrt(2.0 * pi * (self.measurement_noise ** 2))
-        error *= exp(- (error_y ** 2) / (self.measurement_noise ** 2) / 2.0) \
+        error += exp(- (error_1 ** 2) / (self.measurement_noise ** 2) / 2.0) \
+                 / sqrt(2.0 * pi * (self.measurement_noise ** 2))
+        error += exp(- (error_2 ** 2) / (self.measurement_noise ** 2) / 2.0) \
+                 / sqrt(2.0 * pi * (self.measurement_noise ** 2))
+        error += exp(- (error_3 ** 2) / (self.measurement_noise ** 2) / 2.0) \
+                 / sqrt(2.0 * pi * (self.measurement_noise ** 2))
+        error += exp(- (error_4 ** 2) / (self.measurement_noise ** 2) / 2.0) \
+                 / sqrt(2.0 * pi * (self.measurement_noise ** 2))
+        error += exp(- (error_5 ** 2) / (self.measurement_noise ** 2) / 2.0) \
+                 / sqrt(2.0 * pi * (self.measurement_noise ** 2))
+        error += exp(- (error_6 ** 2) / (self.measurement_noise ** 2) / 2.0) \
+                 / sqrt(2.0 * pi * (self.measurement_noise ** 2))
+        error += exp(- (error_7 ** 2) / (self.measurement_noise ** 2) / 2.0) \
                  / sqrt(2.0 * pi * (self.measurement_noise ** 2))
 
         return error
@@ -400,7 +422,10 @@ class particles:
         self.data = []
         for i in range(self.N):
             r = robot()
-            r.set(x, y, theta)
+            arr = self.allocate(grid)
+            rx = arr[0]
+            ry = arr[1]
+            r.set(rx, ry)
             r.set_noise(steering_noise, distance_noise, measurement_noise)
             self.data.append(r)
 
@@ -408,6 +433,14 @@ class particles:
     #
     # extract position from a particle set
     #
+
+    def allocate(self, grid):
+        rx = random.randint(1, len(grid) - 2)
+        ry = random.randint(1, len(grid[0]) - 2)
+        while grid[rx][ry] == 1:
+            rx = random.randint(1, len(grid) - 2)
+            ry = random.randint(1, len(grid[0]) - 2)
+        return [rx, ry]
 
     def get_position(self):
         x = 0.0
@@ -424,6 +457,14 @@ class particles:
                               - self.data[0].orientation + pi) % (2.0 * pi))
                             + self.data[0].orientation - pi)
         return [x / self.N, y / self.N, orientation / self.N]
+
+    def get_positions(self):
+        x = []
+        y = []
+        for i in range(self.N):
+            x.append(self.data[i].x)
+            y.append(self.data[i].y)
+        return [x, y]
 
     # --------
     #
@@ -442,23 +483,27 @@ class particles:
     #
     # custom move
     #
-    def move_custom(self, dx, dy):
+    def move_custom(self, direction):
         newdata = []
 
         for i in range(self.N):
-            r = self.data[i].move_custom(self, dx, dy)
+            r = self.data[i].move_custom(self, direction)
             newdata.append(r)
         self.data = newdata
+
+    def move_random(self, direction):
+        for i in range(self.N):
+            self.data[i].move_random(grid, direction)
 
     # --------
     #
     # sensing and resampling
     #
 
-    def sense(self, Z):
+    def sense(self, actual, grid):
         w = []
         for i in range(self.N):
-            w.append(self.data[i].measurement_prob(Z))
+            w.append(self.data[i].measurement_prob(actual.sense_custom(grid), self.data[i].sense_custom(grid)))
 
         # resampling (careful, this is using shallow copy)
         p3 = []
@@ -483,80 +528,39 @@ class particles:
 
 def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     myrobot = robot()
-    myrobot.set(0., 0., 0.)
+    myrobot.set(5., 5.)
     # myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
     filter = particles(myrobot.x, myrobot.y, myrobot.orientation,
                        steering_noise, distance_noise, measurement_noise)
 
-    cte = 0.0
-    err = 0.0
     N = 0
 
     index = 0  # index into the path
     trail_sense = []
     trail_move = []
+    trail_particle_move = []
 
-    while not myrobot.check_goal(goal) and N < timeout:
+    for i in range(1):
 
-        diff_cte = - cte
+        # myrobot.sense_custom(grid)
 
-        # ----------------------------------------
-        # compute the CTE
+        for i in range(8):
+            num = random.randint(1, 4)
+            print(num, myrobot.x, myrobot.y)
+            myrobot.move_random(grid, num)
+            filter.move_random(num)
+            filter.sense(myrobot, grid)
+            Z = myrobot.sense()
 
-        # start with the present robot estimate
-        estimate = filter.get_position()
+        xpositions, ypositions = filter.get_positions()
+        trail_particle_move.append([xpositions, ypositions])
 
-        ### ENTER CODE HERE
-
-        while index + 1 < len(spath):
-            # while index+1>=len(spath):
-            #     index -= 1
-            deltaX = spath[index + 1][0] - spath[index][0]
-            deltaY = spath[index + 1][1] - spath[index][1]
-            Rx = estimate[0] - spath[index][0]
-            Ry = estimate[1] - spath[index][1]
-
-            try:
-                proju = (Rx * deltaX + Ry * deltaY) / (deltaX ** 2 + deltaY ** 2)
-            except OverflowError:
-                print("### Overflow Error ###")
-                return [False, 0, 0]
-
-            proju = (Rx * deltaX + Ry * deltaY) / (deltaX ** 2 + deltaY ** 2)
-
-            cte = (Ry * deltaX - Rx * deltaY) / (deltaX ** 2 + deltaY ** 2)
-            if proju > 1.0:
-                index += 1
-            else:
-                break
-
-        # ----------------------------------------
-
-        diff_cte += cte
-
-        steer = - params[0] * cte - params[1] * diff_cte
-
-        # myrobot = myrobot.move(grid, steer, speed)
-        myrobot.move_random(grid)
-        myrobot.sense_custom(grid)
-        filter.move(grid, steer, speed)
-
-        Z = myrobot.sense()
-        filter.sense(Z)
         guessP = filter.get_position()
         trail_sense.append([guessP[0], guessP[1]])
         trail_move.append([Z[0], Z[1]])
 
-        if not myrobot.check_collision(grid):
-            print('##### Collision ####')
-
-        err += (cte ** 2)
-        N += 1
-
-        if printflag:
-            print(myrobot, cte, index, u)
-
-    return [myrobot.check_goal(goal), myrobot.num_collisions, myrobot.num_steps, trail_sense, trail_move]
+    return [myrobot.check_goal(goal), myrobot.num_collisions, myrobot.num_steps, trail_sense, trail_move,
+            trail_particle_move]
 
 
 # ------------------------------------------------
@@ -571,11 +575,11 @@ import matplotlib.pyplot as plt
 def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
          weight_data, weight_smooth, p_gain, d_gain):
     path = plan(grid, init, goal)
-    path.astar()
     path.smooth(weight_data, weight_smooth)
-    checkgoal, collisions, steps, trail_sense, trail_move = run(grid, goal, path.spath, [p_gain, d_gain])
+    checkgoal, collisions, steps, trail_sense, trail_move, trail_particle_move = run(grid, goal, path.spath,
+                                                                                     [p_gain, d_gain])
 
-    print([checkgoal, collisions, steps])
+    # print([checkgoal, collisions, steps])
 
     map_grid = []
     Nr = len(grid)
@@ -587,20 +591,18 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
     map_grid = np.asarray(map_grid)
     plt.scatter(map_grid[:, 0], map_grid[:, 1], s=200)
 
-    map_path = np.asarray(path.path)
-    map_spath = np.asarray(path.spath)
-    plt.plot(map_path[:, 1], map_path[:, 0], 'b')
-    plt.plot(map_spath[:, 1], map_spath[:, 0], 'ro-')
-    plt.scatter(init[1], init[0], s=100, marker="D")
-    plt.scatter(goal[1], goal[0], s=200, marker=(5, 1))
     print('Goal: ', goal)
     print('Last location: ', trail_move[-1])
     map_trail_sense = np.asarray(trail_sense)
     map_trail_move = np.asarray(trail_move)
-    plt.plot(map_trail_sense[:, 1], map_trail_sense[:, 0], 'y.-', label='Particle filter estimate')
-    plt.plot(map_trail_move[:, 1], map_trail_move[:, 0], 'k.-', label='Robot location measurement')
+
+    map_trail_particle_move = np.asarray(trail_particle_move)
+
+    plt.scatter(map_trail_move[:, 1], map_trail_move[:, 0], s=150)
+    plt.scatter(map_trail_particle_move[:, 1], map_trail_particle_move[:, 0], s=50)
+
     plt.legend(loc='lower right')
-    plt.xlim(-1, 13)
+    plt.xlim(-1, 12)
     plt.ylim(-1, 13)
     plt.gca().invert_yaxis()
     plt.show()
@@ -618,17 +620,19 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
 #   0 = navigable space
 #   1 = occupied space
 
-grid = [[0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
-        [0, 0, 1, 0, 0, 0, 0, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 1, 0, 0, 1, 1, 1],
-        [0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]
+grid = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1],
+        [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1],
+        [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1],
+        [1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1],
+        [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
 
 init = [0, 0]
 goal = [len(grid) - 1, len(grid[0]) - 1]

@@ -195,6 +195,8 @@ class robot:
             self.dist_arr.append(3)
 
     # --------
+    # --------
+    # set:
     # set:
     #   sets a robot coordinate
     #
@@ -300,10 +302,9 @@ class robot:
             self.y += 1
         if (direction == 4):
             self.y -= 1
-        self.dist_arr[0] = 3
-        self.dist_arr[4] = 3
-        self.dist_arr[2] = 3
-        self.dist_arr[6] = 3
+
+        for i in range(len(self.dist_arr)):
+            self.dist_arr[i] = 3
 
     def move_random(self, grid, num):
         if (int(self.x) >= 0 and int(self.x) < len(grid) - 1 and int(self.y) >= 0 and int(self.y) < len(grid[0]) - 1):
@@ -316,10 +317,8 @@ class robot:
             if (num == 4 and grid[int(self.x)][int(self.y) - 1] != 1 and int(self.y) > 0):
                 self.y -= 1
 
-        self.dist_arr[0] = 3
-        self.dist_arr[4] = 3
-        self.dist_arr[2] = 3
-        self.dist_arr[6] = 3
+        for i in range(len(self.dist_arr)):
+            self.dist_arr[i] = 3
 
     # --------
     # sense:
@@ -329,6 +328,9 @@ class robot:
 
         return [random.gauss(self.x, self.measurement_noise),
                 random.gauss(self.y, self.measurement_noise)]
+
+    def gauss_noise(self, value, std):
+        return random.gauss(value, std)
 
     # --------
     # measurement_prob
@@ -350,16 +352,15 @@ class robot:
                         if (self.x < i and i - self.x < self.dist_arr[4]):
                             self.dist_arr[4] = i - self.x
 
-                    for k in range(2,0,-1):
-                        if(self.x-k == i and self.y-k == j):
-                            self.dist_arr[7] = k*sqrt(2)
+                    for k in range(2, 0, -1):
+                        if (self.x - k == i and self.y - k == j):
+                            self.dist_arr[7] = k * sqrt(2)
                         if (self.x - k == i and self.y + k == j):
                             self.dist_arr[5] = k * sqrt(2)
                         if (self.x + k == i and self.y + k == j):
                             self.dist_arr[3] = k * sqrt(2)
                         if (self.x + k == i and self.y - k == j):
                             self.dist_arr[1] = k * sqrt(2)
-
 
         return self.dist_arr
 
@@ -374,6 +375,15 @@ class robot:
         error_5 = measurement[5] - actual[5]
         error_6 = measurement[6] - actual[6]
         error_7 = measurement[7] - actual[7]
+
+        error_0 = self.gauss_noise(error_0, 0.2)
+        error_1 = self.gauss_noise(error_0, 0.2)
+        error_2 = self.gauss_noise(error_0, 0.2)
+        error_3 = self.gauss_noise(error_0, 0.2)
+        error_4 = self.gauss_noise(error_0, 0.2)
+        error_5 = self.gauss_noise(error_0, 0.2)
+        error_6 = self.gauss_noise(error_0, 0.2)
+        error_7 = self.gauss_noise(error_0, 0.2)
 
         # calculate Gaussian
         error = exp(- (error_0 ** 2) / (self.measurement_noise ** 2) / 2.0) \
@@ -528,7 +538,7 @@ class particles:
 
 def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     myrobot = robot()
-    myrobot.set(5., 5.)
+    myrobot.set(1., 1.)
     # myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
     filter = particles(myrobot.x, myrobot.y, myrobot.orientation,
                        steering_noise, distance_noise, measurement_noise)
@@ -544,7 +554,7 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
 
         # myrobot.sense_custom(grid)
 
-        for i in range(8):
+        for i in range(10):
             num = random.randint(1, 4)
             print(num, myrobot.x, myrobot.y)
             myrobot.move_random(grid, num)

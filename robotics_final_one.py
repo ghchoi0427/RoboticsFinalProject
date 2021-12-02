@@ -349,7 +349,18 @@ class robot:
                             self.dist_arr[0] = self.x - i
                         if (self.x < i and i - self.x < self.dist_arr[4]):
                             self.dist_arr[4] = i - self.x
-        print(self.dist_arr[0], self.dist_arr[2], self.dist_arr[4], self.dist_arr[6])
+
+                    for k in range(2,0,-1):
+                        if(self.x-k == i and self.y-k == j):
+                            self.dist_arr[7] = k*sqrt(2)
+                        if (self.x - k == i and self.y + k == j):
+                            self.dist_arr[5] = k * sqrt(2)
+                        if (self.x + k == i and self.y + k == j):
+                            self.dist_arr[3] = k * sqrt(2)
+                        if (self.x + k == i and self.y - k == j):
+                            self.dist_arr[1] = k * sqrt(2)
+
+
         return self.dist_arr
 
     def measurement_prob(self, actual, measurement):
@@ -480,6 +491,10 @@ class particles:
             newdata.append(r)
         self.data = newdata
 
+    def move_random(self, direction):
+        for i in range(self.N):
+            self.data[i].move_random(grid, direction)
+
     # --------
     #
     # sensing and resampling
@@ -525,13 +540,18 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     trail_move = []
     trail_particle_move = []
 
-    for i in range(100):
-        num = random.randint(1, 4)
-        myrobot.move_random(grid, num)
-        myrobot.sense_custom(grid)
+    for i in range(1):
 
-        Z = myrobot.sense()
-        filter.sense(myrobot, grid)
+        # myrobot.sense_custom(grid)
+
+        for i in range(8):
+            num = random.randint(1, 4)
+            print(num, myrobot.x, myrobot.y)
+            myrobot.move_random(grid, num)
+            filter.move_random(num)
+            filter.sense(myrobot, grid)
+            Z = myrobot.sense()
+
         xpositions, ypositions = filter.get_positions()
         trail_particle_move.append([xpositions, ypositions])
 
@@ -559,7 +579,7 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
     checkgoal, collisions, steps, trail_sense, trail_move, trail_particle_move = run(grid, goal, path.spath,
                                                                                      [p_gain, d_gain])
 
-    print([checkgoal, collisions, steps])
+    # print([checkgoal, collisions, steps])
 
     map_grid = []
     Nr = len(grid)
@@ -578,8 +598,8 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
 
     map_trail_particle_move = np.asarray(trail_particle_move)
 
-    plt.plot(map_trail_move[:, 1], map_trail_move[:, 0], 'k.-', label='Robot location measurement')
-    plt.scatter(map_trail_particle_move[:, 1], map_trail_particle_move[:, 0], s=100)
+    plt.scatter(map_trail_move[:, 1], map_trail_move[:, 0], s=150)
+    plt.scatter(map_trail_particle_move[:, 1], map_trail_particle_move[:, 0], s=50)
 
     plt.legend(loc='lower right')
     plt.xlim(-1, 12)

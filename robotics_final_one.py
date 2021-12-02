@@ -189,10 +189,9 @@ class robot:
         self.num_collisions = 0
         self.num_steps = 0
 
-        self.dist_top = 3
-        self.dist_bottom = 3
-        self.dist_right = 3
-        self.dist_left = 3
+        self.dist_arr = []
+        for i in range(8):
+            self.dist_arr.append(3)
 
     # --------
     # set:
@@ -316,10 +315,11 @@ class robot:
                 self.y += 1
             if (num == 4 and grid[int(self.x)][int(self.y) - 1] != 1 and int(self.y) > 0):
                 self.y -= 1
-        self.dist_top = 3
-        self.dist_bottom = 3
-        self.dist_right = 3
-        self.dist_left = 3
+
+        self.dist_arr[0] = 3
+        self.dist_arr[4] = 3
+        self.dist_arr[2] = 3
+        self.dist_arr[6] = 3
 
     # --------
     # sense:
@@ -336,30 +336,30 @@ class robot:
     #
 
     def sense_custom(self, grid):
-        if (self.x < 2 and self.x < self.dist_left):
-            self.dist_left = self.x
-        if (len(grid) - 1 - self.x < 3 and len(grid) - 1 - self.x < self.dist_right):
-            self.dist_right = len(grid) - 1 - self.x
-        if (self.y < 2 and self.y < self.dist_top):
-            self.dist_top = self.y
-        if (len(grid[0]) - 1 - self.y < 3 and len(grid[0]) - 1 - self.y < self.dist_bottom):
-            self.dist_bottom = len(grid[0]) - 1 - self.y
+        if (self.x < 2 and self.x < self.dist_arr[6]):
+            self.dist_arr[6] = self.x
+        if (len(grid) - 1 - self.x < 3 and len(grid) - 1 - self.x < self.dist_arr[2]):
+            self.dist_arr[2] = len(grid) - 1 - self.x
+        if (self.y < 2 and self.y < self.dist_arr[0]):
+            self.dist_arr[0] = self.y
+        if (len(grid[0]) - 1 - self.y < 3 and len(grid[0]) - 1 - self.y < self.dist_arr[4]):
+            self.dist_arr[4] = len(grid[0]) - 1 - self.y
 
         for i in range(len(grid)):
             for j in range(len(grid[0])):
                 if grid[i][j] == 1:
                     if (self.x == i):
-                        if (self.y < j and j - self.y < self.dist_right):
-                            self.dist_right = j - self.y
-                        if (self.y > j and self.y - j < self.dist_left):
-                            self.dist_left = self.y - j
+                        if (self.y < j and j - self.y < self.dist_arr[2]):
+                            self.dist_arr[2] = j - self.y
+                        if (self.y > j and self.y - j < self.dist_arr[6]):
+                            self.dist_arr[6] = self.y - j
                     if (self.y == j):
-                        if (self.x > i and self.x - i < self.dist_top):
-                            self.dist_top = self.x - i
-                        if (self.x < i and i - self.x < self.dist_bottom):
-                            self.dist_bottom = i - self.x
+                        if (self.x > i and self.x - i < self.dist_arr[0]):
+                            self.dist_arr[0] = self.x - i
+                        if (self.x < i and i - self.x < self.dist_arr[4]):
+                            self.dist_arr[4] = i - self.x
 
-        print(self.dist_top, self.dist_bottom, self.dist_right, self.dist_left)
+        print(self.dist_arr[0], self.dist_arr[4], self.dist_arr[2], self.dist_arr[6])
 
     def measurement_prob(self, measurement):
 
@@ -499,7 +499,6 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     for i in range(100):
         myrobot.move_random(grid)
         myrobot.sense_custom(grid)
-        filter.move(grid, 0., speed)
 
         Z = myrobot.sense()
         filter.sense(Z)
@@ -543,7 +542,7 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
     map_trail_move = np.asarray(trail_move)
     plt.plot(map_trail_move[:, 1], map_trail_move[:, 0], 'k.-', label='Robot location measurement')
     plt.legend(loc='lower right')
-    plt.xlim(-1, 13)
+    plt.xlim(-1, 12)
     plt.ylim(-1, 13)
     plt.gca().invert_yaxis()
     plt.show()

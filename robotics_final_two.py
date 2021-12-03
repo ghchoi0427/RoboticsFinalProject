@@ -362,7 +362,7 @@ class robot:
                             self.dist_arr[3] = k * sqrt(2)
                         if (self.x + k == i and self.y - k == j):
                             self.dist_arr[1] = k * sqrt(2)
-
+        print(self.dist_arr)
         return self.dist_arr
 
     def measurement_prob_(self, measurement):
@@ -577,7 +577,7 @@ class particles:
 def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
     myrobot = robot()
     myrobot.set(1., 1.)
-    myrobot.set_noise(steering_noise, distance_noise, measurement_noise)
+    myrobot.set_noise(0.0, 0.0, 0.0)
     filter = particles(myrobot.x, myrobot.y, myrobot.orientation,
                        steering_noise, distance_noise, measurement_noise)
 
@@ -616,6 +616,7 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
 
     init = [int(myrobot.x), int(myrobot.y)]
     print(init)
+    returnInit = init
     path = plan(grid, init, goal)
     path.astar()
     path.smooth(weight_data, weight_smooth)
@@ -666,6 +667,7 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
         steer = - params[0] * cte - params[1] * diff_cte
 
         myrobot = myrobot.move(grid, steer, speed)
+        myrobot.sense_custom(grid)
         filter.move(grid, steer, speed)
 
         Z = myrobot.sense()
@@ -684,7 +686,7 @@ def run(grid, goal, spath, params, printflag=False, speed=0.1, timeout=1000):
             print(myrobot, cte, index, u)
 
     return [myrobot.check_goal(goal), myrobot.num_collisions, myrobot.num_steps, trail_sense, trail_move,
-            trail_particle_move]
+            trail_particle_move, returnInit]
 
 
 # ------------------------------------------------
@@ -701,9 +703,11 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
     path = plan(grid, init, goal)
     path.astar()
     path.smooth(weight_data, weight_smooth)
-    checkgoal, collisions, steps, trail_sense, trail_move, trail_particle_move = run(grid, goal, path.spath,
+    checkgoal, collisions, steps, trail_sense, trail_move, trail_particle_move, returnInit = run(grid, goal, path.spath,
                                                                                      [p_gain, d_gain])
-
+    path = plan(grid, returnInit, goal)
+    path.astar()
+    path.smooth(weight_data, weight_smooth)
     # print([checkgoal, collisions, steps])
 
     map_grid = []
@@ -728,6 +732,8 @@ def main(grid, init, goal, steering_noise, distance_noise, measurement_noise,
     plt.plot(map_trail_sense[:, 1], map_trail_sense[:, 0], 'y.-', label='Particle filter estimate')
     plt.plot(map_trail_move[:, 1], map_trail_move[:, 0], 'k.-', label='Robot location measurement')
     plt.scatter(goal[1], goal[0], s=200, marker=(5, 1))
+    map_spath = np.asarray(path.spath)
+    plt.plot(map_spath[:, 1], map_spath[:, 0], 'ro-')
     plt.legend(loc='lower right')
     plt.xlim(-1, 12)
     plt.ylim(-1, 13)
